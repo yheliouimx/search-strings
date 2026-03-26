@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/search-strings-logo.png" alt="search-strings logo" width="400">
+</p>
+
 # search-strings
 
 High-performance recursive pattern search tool with multi-format reporting.

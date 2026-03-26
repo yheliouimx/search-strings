@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "search-strings"
+version = "2.0.0"
+description = "High-performance recursive pattern search tool with multi-format reporting"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [
+    {name = "Development Team"},
+]
+keywords = ["search", "pattern", "grep", "ripgrep", "tool", "cli"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+
+dependencies = [
+    "tqdm>=4.50.0",
+    "colorama>=0.4.3",
+    "pandas>=1.0.0",
+    "openpyxl>=3.0.0",
+    "rich>=10.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "black>=21.0",
+    "flake8>=3.9",
+    "mypy>=0.900",
+]
+
+[project.scripts]
+search-strings = "search_strings.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["search_strings*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py37", "py38", "py39", "py310", "py311"]
+
+[tool.mypy]
+python_version = "3.7"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

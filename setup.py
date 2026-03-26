@@ -7,12 +7,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="search-strings",
-    version="2.0.0",
-    author="Development Team",
+    version="2.1.0",
+    author="Youssef HELIOUI",
     description="High-performance recursive pattern search tool with multi-format reporting",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/search-strings",
+    url="https://github.com/yheliouimx/search-strings",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

@@ -9,6 +9,40 @@ from .utils import set_debug
 from .orchestrator import SearchOrchestrator
 
 
+def load_replacement_pairs(filepath: str):
+    """
+    Load replacement pairs from file.
+    Each line: old_string|new_string
+    Use ``\\|`` to include a literal pipe in the strings.
+
+    Returns:
+        List of (old, new) tuples
+    """
+    pairs = []
+    with open(filepath, "r", encoding="utf-8") as f:
+        for line_num, raw_line in enumerate(f, 1):
+            line = raw_line.strip()
+            if not line:
+                continue
+            # Split on unescaped pipes: split on | but not \|
+            # Replace escaped pipes with a placeholder, split, restore
+            placeholder = "\x00PIPE\x00"
+            safe = line.replace("\\|", placeholder)
+            parts = safe.split("|")
+            if len(parts) != 2:
+                raise ValueError(
+                    f"Line {line_num}: expected 'old|new', got: {line}"
+                )
+            old = parts[0].replace(placeholder, "|").strip()
+            new = parts[1].replace(placeholder, "|").strip()
+            if not old:
+                raise ValueError(
+                    f"Line {line_num}: old string cannot be empty"
+                )
+            pairs.append((old, new))
+    return pairs
+
+
 def load_patterns(patterns_arg: str):
     """
     Load patterns from file or treat as single pattern.
@@ -81,6 +115,17 @@ Examples:
     parser.add_argument("--debug", action="store_true",
                        help="Enable detailed debug logs")
 
+    # Replace mode options
+    replace_group = parser.add_argument_group("Replace mode")
+    replace_group.add_argument("--replace", metavar="NEW_STRING", default=None,
+                              help="Replace matched pattern with NEW_STRING (use with --single)")
+    replace_group.add_argument("--replace-strings", action="store_true",
+                              help="Treat patterns file as replacement pairs (old|new per line)")
+    replace_group.add_argument("--dry-run", action="store_true",
+                              help="Preview replacements without modifying files")
+    replace_group.add_argument("--backup", action="store_true",
+                              help="Create .bak copies before replacing")
+
     args = parser.parse_args()
 
     # Setup
@@ -114,9 +159,68 @@ Examples:
     if args.extensions.strip():
         extensions = set(x.strip().lower() for x in args.extensions.split(","))
 
-    # Run search
+    # Run search or replace
     orchestrator = SearchOrchestrator(console, pandas=pandas, openpyxl=openpyxl)
 
+    # === REPLACE MODE ===
+    if args.replace is not None or args.replace_strings:
+        # Build replacement pairs
+        if args.replace_strings:
+            if not os.path.isfile(args.patterns):
+                console.print("[red]--replace-strings requires a file path as patterns argument.[/red]")
+                sys.exit(1)
+            try:
+                pairs = load_replacement_pairs(args.patterns)
+            except ValueError as e:
+                console.print(f"[red]Error parsing replacement file: {e}[/red]")
+                sys.exit(1)
+            if not pairs:
+                console.print("[red]No replacement pairs found in file.[/red]")
+                sys.exit(1)
+        elif args.replace is not None:
+            if not args.single:
+                console.print("[red]--replace requires --single to specify the pattern to find.[/red]")
+                sys.exit(1)
+            pairs = [(patterns[0], args.replace)]
+        else:
+            console.print("[red]No replacement pairs specified.[/red]")
+            sys.exit(1)
+
+        # Default to dry-run if neither --dry-run nor explicit write
+        dry_run = args.dry_run
+
+        replace_results = orchestrator.run_replace(
+            pairs=pairs,
+            directory=args.directory,
+            extensions=extensions,
+            threads=args.threads,
+            use_rg=not args.no_rg,
+            dry_run=dry_run,
+            backup=args.backup,
+            quiet=args.quiet,
+        )
+
+        # Generate replace reports
+        if args.all_reports:
+            args.html = args.excel = args.csv = args.json = True
+
+        if args.html or args.excel or args.csv or args.json:
+            orchestrator.generate_replace_reports(
+                changes=replace_results["changes"],
+                skipped=replace_results["skipped"],
+                files_scanned=replace_results["files_scanned"],
+                dry_run=dry_run,
+                prefix=prefix,
+                html=args.html,
+                excel=args.excel,
+                json=args.json,
+                csv=args.csv,
+                quiet=args.quiet,
+            )
+
+        return
+
+    # === SEARCH MODE ===
     search_results = orchestrator.run(
         patterns=patterns,
         directory=args.directory,

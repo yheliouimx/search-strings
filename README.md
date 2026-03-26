@@ -14,6 +14,13 @@ High-performance recursive pattern search tool with multi-format reporting.
 - Search modes:
   - Pattern list from file (one pattern per line)
   - Single literal pattern from CLI
+- **Replace mode**: find and replace strings across files
+  - Single pair from CLI or bulk pairs from file
+  - Dry-run preview before applying changes
+  - Backup support (`.bak` files)
+  - Atomic writes to prevent corruption
+  - Smart encoding detection (UTF-8, UTF-16, BOM-aware)
+  - Windows long path support (>260 characters)
 - Smart search engine selection:
   - Uses `ripgrep` (`rg`) when available for best performance
   - Falls back to `grep` automatically
@@ -115,6 +122,10 @@ search-strings patterns.txt . --json --quiet
 | `--quiet` | flag | `false` | Suppress console output |
 | `--yes` | flag | `false` | Auto-install missing Python dependencies without prompt |
 | `--debug` | flag | `false` | Enable detailed debug logs |
+| `--replace VALUE` | string | - | Replace matched pattern with `VALUE` (use with `--single`) |
+| `--replace-strings` | flag | `false` | Treat patterns file as replacement pairs (`old\|new` per line) |
+| `--dry-run` | flag | `false` | Preview replacements without modifying files |
+| `--backup` | flag | `false` | Create `.bak` copies before replacing |
 
 ## Input Patterns File Format
 
@@ -127,6 +138,86 @@ ERROR_42
 ```
 
 Empty lines are ignored.
+
+## Replace Mode
+
+### Single pair replacement
+
+Preview changes (dry-run):
+
+```bash
+search-strings "old_text" /path/to/search --single --replace "new_text" --dry-run
+```
+
+Apply changes:
+
+```bash
+search-strings "old_text" /path/to/search --single --replace "new_text"
+```
+
+Apply with backup:
+
+```bash
+search-strings "old_text" /path/to/search --single --replace "new_text" --backup
+```
+
+### Bulk replacement from file
+
+Create a replacements file with `old|new` pairs, one per line:
+
+```text
+customer_id|client_id
+old_config|new_config
+ERROR_42|WARNING_42
+```
+
+Use `\|` to include a literal pipe character in the strings.
+
+Preview:
+
+```bash
+search-strings replacements.txt /path/to/search --replace-strings --dry-run
+```
+
+Apply:
+
+```bash
+search-strings replacements.txt /path/to/search --replace-strings
+```
+
+### Replace with reports
+
+Generate HTML/Excel/CSV/JSON reports of all changes:
+
+```bash
+search-strings "old_text" /path --single --replace "new_text" --dry-run --all-reports
+```
+
+### Dry-run output
+
+The dry-run shows a diff-style preview for each change:
+
+```
+file/path/config.xml
+  Line 12
+  --- <value>customer_id</value>
+  +++ <value>client_id</value>
+```
+
+Followed by a summary:
+
+```
+==================================================
+  Dry Run Summary
+==================================================
+  Files scanned:      142
+  Files would be modified:  5
+  Total replacements: 12
+
+  Pairs:
+    customer_id -> client_id  (12 matches)
+==================================================
+```
 
 ## Output
 

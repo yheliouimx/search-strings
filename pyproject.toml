@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "search-strings"
-version = "2.0.0"
+version = "2.1.0"
 description = "High-performance recursive pattern search tool with multi-format reporting"
 readme = "README.md"
 requires-python = ">=3.7"

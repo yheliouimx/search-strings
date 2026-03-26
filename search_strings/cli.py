@@ -6,6 +6,7 @@ import argparse
 from datetime import datetime
 from .dependencies import ensure_dependencies, safe_import
 from .utils import set_debug
+from . import __version__
 from .orchestrator import SearchOrchestrator
 
 
@@ -85,6 +86,9 @@ Examples:
   search-strings patterns.txt . --extensions xml,txt,json
         """
     )
+
+    parser.add_argument("--version", action="version",
+                       version=f"search-strings {__version__}")
     
     parser.add_argument("patterns", 
                        help="File containing patterns (one per line) or single pattern")
